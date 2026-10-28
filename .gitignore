@@ -1,0 +1,44 @@
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+
+# IDE and environment
+.idea/
+.vscode/
+.env
+.venv/
+venv/
+
+# Large sequencing and processed data
+*.h5ad
+*.h5
+*.hdf5
+*.loom
+*.fastq
+*.fastq.gz
+*.bam
+*.sam
+*.mtx
+*.mtx.gz
+
+# Trained models
+scvi_model/
+solo_model/
+*.pt
+*.pth
+*.ckpt
+
+# Large or generated analysis outputs
+data/raw/
+data/processed/
+data/results/*.csv
+data/results/*.parquet
+data/results/*.npy
+data/results/*.npz
+
+# Operating system
+.DS_Store
+Thumbs.db
