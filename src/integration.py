@@ -37,7 +37,7 @@ def train_scvi(adata, n_latent=10):
     print("scVI dataset:", adata_scvi.shape)
 
     # Use sample identity as the batch covariate.
-    scvi.model.SCVI.setup_anndata(adata_scvi, bbatch_key="biosample_id",)
+    scvi.model.SCVI.setup_anndata(adata_scvi, batch_key="biosample_id",)
 
     # Train the model on raw UMI counts.
     model = scvi.model.SCVI(adata_scvi,n_latent=n_latent,)

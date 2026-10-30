@@ -42,3 +42,22 @@ data/results/*.npz
 # Operating system
 .DS_Store
 Thumbs.db
+
+
+# Raw sequencing count matrices
+data/raw_counts/
+data/test/
+
+# Other large sequencing data
+*.csv.gz
+*.fastq.gz
+*.h5ad
+
+docs/s41586-021-03569-1.pdf
+
+# Large datasets and temporary data
+data/raw_counts/
+data/test/
+
+# Published articles
+docs/*.pdf
