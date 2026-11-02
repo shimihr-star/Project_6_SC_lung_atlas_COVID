@@ -58,38 +58,22 @@ def prepare_volcano_data(df):
 
     # Calculate -log10(P-value).
     # Clipping prevents log10(0) if extremely small P-values occur.
-    volcano_df["neg_log10_p"] = -np.log10(
-        volcano_df["PValue"].clip(lower=np.finfo(float).tiny)
-    )
+    volcano_df["neg_log10_p"] = -np.log10(volcano_df["PValue"].clip(lower=np.finfo(float).tiny))
 
     # Classify genes based on FDR and log2 fold change.
     volcano_df["status"] = "Not significant"
-
-    volcano_df.loc[
-        (volcano_df["FDR"] < FDR_THRESHOLD) &
-        (volcano_df["logFC"] > LOGFC_THRESHOLD),
-        "status"
-    ] = "Upregulated"
-
-    volcano_df.loc[
-        (volcano_df["FDR"] < FDR_THRESHOLD) &
-        (volcano_df["logFC"] < -LOGFC_THRESHOLD),
-        "status"
-    ] = "Downregulated"
-
+    volcano_df.loc[(volcano_df["FDR"] < FDR_THRESHOLD) &(volcano_df["logFC"] > LOGFC_THRESHOLD),"status"] = "Upregulated"
+    volcano_df.loc[(volcano_df["FDR"] < FDR_THRESHOLD) &(volcano_df["logFC"] < -LOGFC_THRESHOLD),"status"] = "Downregulated"
     return volcano_df
 
 
 macrophage_volcano = prepare_volcano_data(macrophage_dge)
 at2_volcano = prepare_volcano_data(at2_dge)
 
-
 # ----------------------------------------------------------------------------------------------------------------------
 # 6. Check gene classifications
 # ----------------------------------------------------------------------------------------------------------------------
-for cell_type, df in [
-    ("Macrophage", macrophage_volcano),
-    ("AT2", at2_volcano)]:
+for cell_type, df in [("Macrophage", macrophage_volcano), ("AT2", at2_volcano)]:
     print(f"\n{cell_type} volcano classification:")
     print(df["status"].value_counts())
 
@@ -97,17 +81,11 @@ for cell_type, df in [
 # ----------------------------------------------------------------------------------------------------------------------
 # 7. Generate volcano plots
 # ----------------------------------------------------------------------------------------------------------------------
-
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 sns.set_theme(style="whitegrid")
 
-COLORS = {
-    "Not significant": "lightgray",
-    "Downregulated": "steelblue",
-    "Upregulated": "firebrick"
-}
+COLORS = {"Not significant": "lightgray", "Downregulated": "steelblue", "Upregulated": "firebrick"}
 
 
 def plot_volcano(df, cell_type):
@@ -117,29 +95,14 @@ def plot_volcano(df, cell_type):
     for status in ["Not significant", "Downregulated", "Upregulated"]:
         subset = df[df["status"] == status]
 
-        ax.scatter(
-            subset["logFC"],
-            subset["neg_log10_p"],
-            color=COLORS[status],
-            label=f"{status} (n={len(subset)})",
-            alpha=0.6,
-            s=12,
-            edgecolors="none"
-        )
+        ax.scatter(subset["logFC"], subset["neg_log10_p"], color=COLORS[status], label=f"{status} (n={len(subset)})", alpha=0.6, s=12, edgecolors="none")
 
     # Fold-change thresholds.
     ax.axvline(-LOGFC_THRESHOLD, color="gray", linestyle="--")
     ax.axvline(LOGFC_THRESHOLD, color="gray", linestyle="--")
-
-    ax.set(
-        title=f"{cell_type} — Differential Gene Expression",
-        xlabel="Log2 Fold Change (COVID-19 vs Control)",
-        ylabel="-Log10(P-value)"
-    )
-
+    ax.set(title=f"{cell_type} — Differential Gene Expression", xlabel="Log2 Fold Change (COVID-19 vs Control)", ylabel="-Log10(P-value)")
     ax.legend(loc="upper right", frameon=True)
     fig.tight_layout()
-
     return fig
 
 
@@ -148,17 +111,8 @@ fig_macrophage = plot_volcano(macrophage_volcano, "Macrophage")
 fig_at2 = plot_volcano(at2_volcano, "AT2")
 
 # Save plots.
-fig_macrophage.savefig(
-    FIGURES_DIR / "macrophage_volcano.png",
-    dpi=300,
-    bbox_inches="tight"
-)
-
-fig_at2.savefig(
-    FIGURES_DIR / "at2_volcano.png",
-    dpi=300,
-    bbox_inches="tight"
-)
+fig_macrophage.savefig(FIGURES_DIR / "macrophage_volcano.png", dpi=300, bbox_inches="tight")
+fig_at2.savefig(FIGURES_DIR / "at2_volcano.png",dpi=300, bbox_inches="tight")
 
 
 
@@ -166,89 +120,47 @@ fig_at2.savefig(
 # ----------------------------------------------------------------------------------------------------------------------
 # 8. Label the top 10 most significant genes
 # ----------------------------------------------------------------------------------------------------------------------
-
 from adjustText import adjust_text
-
 
 def add_gene_labels(fig, df, n_genes=10):
     ax = fig.axes[0]
 
     # Select significant genes, ordered by FDR and then P-value.
-    top_genes = (
-        df[df["status"] != "Not significant"]
-        .sort_values(["FDR", "PValue"])
-        .head(n_genes)
-    )
-
+    top_genes = (df[df["status"] != "Not significant"].sort_values(["FDR", "PValue"]).head(n_genes))
     labels = []
 
     for _, gene in top_genes.iterrows():
-        label = ax.text(
-            gene["logFC"],
-            gene["neg_log10_p"],
-            gene["gene"],
-            fontsize=9
-        )
+        label = ax.text( gene["logFC"],gene["neg_log10_p"], gene["gene"], fontsize=9)
         labels.append(label)
 
     # Adjust labels to reduce overlap.
-    adjust_text(
-        labels,
-        ax=ax,
-        arrowprops=dict(arrowstyle="-", color="gray", lw=0.6)
-    )
+    adjust_text(labels, ax=ax,  arrowprops=dict(arrowstyle="-", color="gray", lw=0.6))
 
 
 add_gene_labels(fig_macrophage, macrophage_volcano)
 add_gene_labels(fig_at2, at2_volcano)
-
 print("Macrophage labels:", len(fig_macrophage.axes[0].texts))
 print("AT2 labels:", len(fig_at2.axes[0].texts))
-
 print("Macrophage figure:", fig_macrophage.number)
 print("AT2 figure:", fig_at2.number)
 
-
 # Save updated figures.
-fig_macrophage.savefig(
-    FIGURES_DIR / "macrophage_volcano_labeled.png",
-    dpi=300,
-    bbox_inches="tight"
-)
-
-fig_at2.savefig(
-    FIGURES_DIR / "at2_volcano_labeled.png",
-    dpi=300,
-    bbox_inches="tight"
-)
-
+fig_macrophage.savefig(FIGURES_DIR / "macrophage_volcano_labeled.png", dpi=300, bbox_inches="tight")
+fig_at2.savefig(FIGURES_DIR / "at2_volcano_labeled.png",dpi=300, bbox_inches="tight")
 plt.show()
-
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 9. Load TMM-normalized log2 CPM expression matrices
 # ----------------------------------------------------------------------------------------------------------------------
-
-macrophage_expr = pd.read_csv(
-    RESULTS_DIR / "macrophage_log2cpm.csv",
-    index_col=0
-)
-
-at2_expr = pd.read_csv(
-    RESULTS_DIR / "at2_log2cpm.csv",
-    index_col=0
-)
+macrophage_expr = pd.read_csv(RESULTS_DIR / "macrophage_log2cpm.csv", index_col=0)
+at2_expr = pd.read_csv(RESULTS_DIR / "at2_log2cpm.csv",index_col=0)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 10. Validate normalized expression matrices
 # ----------------------------------------------------------------------------------------------------------------------
-
-for cell_type, expr, dge_results in [
-    ("Macrophage", macrophage_expr, macrophage_dge),
-    ("AT2", at2_expr, at2_dge)
-]:
+for cell_type, expr, dge_results in [("Macrophage", macrophage_expr, macrophage_dge),("AT2", at2_expr, at2_dge)]:
     print(f"\n{cell_type} normalized expression:")
     print("Donors:", expr.shape[0])
     print("Genes:", expr.shape[1])
@@ -261,30 +173,15 @@ for cell_type, expr, dge_results in [
 # ----------------------------------------------------------------------------------------------------------------------
 # 11. Prepare heatmap data
 # ----------------------------------------------------------------------------------------------------------------------
-
 def prepare_heatmap_data(expr, dge, n_per_direction=10):
 
     # Select genes significantly upregulated in COVID-19.
-    up_genes = (
-        dge[
-            (dge["FDR"] < FDR_THRESHOLD) &
-            (dge["logFC"] > LOGFC_THRESHOLD)
-        ]
-        .sort_values("FDR")
-        .head(n_per_direction)
-        .index.tolist()
-    )
+    up_genes = (dge[(dge["FDR"] < FDR_THRESHOLD) &
+            (dge["logFC"] > LOGFC_THRESHOLD)].sort_values("FDR").head(n_per_direction).index.tolist())
 
     # Select genes significantly downregulated in COVID-19.
-    down_genes = (
-        dge[
-            (dge["FDR"] < FDR_THRESHOLD) &
-            (dge["logFC"] < -LOGFC_THRESHOLD)
-        ]
-        .sort_values("FDR")
-        .head(n_per_direction)
-        .index.tolist()
-    )
+    down_genes = (dge[(dge["FDR"] < FDR_THRESHOLD) &
+            (dge["logFC"] < -LOGFC_THRESHOLD)].sort_values("FDR").head(n_per_direction).index.tolist())
 
     selected_genes = up_genes + down_genes
 
@@ -294,48 +191,24 @@ def prepare_heatmap_data(expr, dge, n_per_direction=10):
     # Calculate a Z-score for each gene across donors.
     gene_means = heatmap_data.mean(axis=1)
     gene_stds = heatmap_data.std(axis=1)
-
-    heatmap_z = heatmap_data.sub(gene_means, axis=0).div(
-        gene_stds.replace(0, np.nan),
-        axis=0
-    ).fillna(0)
-
+    heatmap_z = heatmap_data.sub(gene_means, axis=0).div(gene_stds.replace(0, np.nan),axis=0).fillna(0)
     return heatmap_z
 
 
-macrophage_heatmap = prepare_heatmap_data(
-    macrophage_expr, macrophage_dge
-)
-
-at2_heatmap = prepare_heatmap_data(
-    at2_expr, at2_dge
-)
-
+macrophage_heatmap = prepare_heatmap_data(macrophage_expr, macrophage_dge)
+at2_heatmap = prepare_heatmap_data(at2_expr, at2_dge)
 print("\nMacrophage heatmap:", macrophage_heatmap.shape)
 print("AT2 heatmap:", at2_heatmap.shape)
-
 
 # ----------------------------------------------------------------------------------------------------------------------
 # 12. Plot heatmaps
 # ----------------------------------------------------------------------------------------------------------------------
-
 def plot_dge_heatmap(data, cell_type):
 
     # Donor IDs beginning with C are controls;
     # donor IDs beginning with L are COVID-19 samples.
-    donor_groups = [
-        "Control" if donor.startswith("C") else "COVID-19"
-        for donor in data.columns
-    ]
-
-    group_colors = pd.Series(
-        donor_groups,
-        index=data.columns
-    ).map({
-        "Control": "steelblue",
-        "COVID-19": "firebrick"
-    })
-
+    donor_groups = ["Control" if donor.startswith("C") else "COVID-19" for donor in data.columns]
+    group_colors = pd.Series(donor_groups,index=data.columns).map({ "Control": "steelblue", "COVID-19": "firebrick"})
     grid = sns.clustermap(
         data,
         cmap="vlag",
@@ -348,36 +221,16 @@ def plot_dge_heatmap(data, cell_type):
         figsize=(13, 9),
         xticklabels=True,
         yticklabels=True,
-        cbar_kws={"label": "Gene-wise Z-score"}
-    )
+        cbar_kws={"label": "Gene-wise Z-score"})
 
-    grid.fig.suptitle(
-        f"{cell_type} — Top Differentially Expressed Genes",
-        y=1.02,
-        fontsize=15
-    )
-
+    grid.fig.suptitle(f"{cell_type} — Top Differentially Expressed Genes", y=1.02,  fontsize=15)
     grid.ax_heatmap.set_xlabel("Donors")
     grid.ax_heatmap.set_ylabel("Genes")
-
-    grid.ax_heatmap.tick_params(
-        axis="x",
-        labelrotation=90,
-        labelsize=8
-    )
-
+    grid.ax_heatmap.tick_params(axis="x",labelrotation=90, labelsize=8)
     output_file = FIGURES_DIR / f"{cell_type.lower()}_heatmap.png"
-
-    grid.fig.savefig(
-        output_file,
-        dpi=300,
-        bbox_inches="tight"
-    )
-
+    grid.fig.savefig(output_file,dpi=300, bbox_inches="tight")
     plt.close(grid.fig)
-
     print(f"Saved: {output_file}")
-
 
 plot_dge_heatmap(macrophage_heatmap, "Macrophage")
 plot_dge_heatmap(at2_heatmap, "AT2")
