@@ -65,6 +65,13 @@ def main():
     print("Number of donors:", len(counts))
     print("Number of cell types:", len(counts.columns))
 
+
+    # 3.1. Inspect donor coverage for additional cell types
+    print("\nAvailable cell types:")
+    print(counts.columns.tolist())
+    print("\nDonor-level nuclei counts:")
+    print(counts.to_string())
+
     # --------------------------------------------------------
     # 4. Extract donor-level clinical metadata
     # --------------------------------------------------------
